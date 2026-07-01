@@ -201,8 +201,8 @@ class CreatorScene extends Phaser.Scene {
 
     this.playerG = this.add.graphics();
 
-    this.numberText = this.add.text(this.playerX, this.playerY+50, '10', {
-      fontSize: '22px', fontFamily: 'Arial Black, sans-serif',
+    this.numberText = this.add.text(this.playerX, this.playerY-52, '10', {
+      fontSize: '20px', fontFamily: 'Arial Black, sans-serif',
       color: '#ffffff', stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
 
