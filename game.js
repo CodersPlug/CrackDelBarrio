@@ -5,7 +5,7 @@
 
 const GW = 1024;
 const GH = 576;
-const VERSION = '2.3';
+const VERSION = '2.4';
 const SAVE_PREFIX = 'crackDelBarrio_v2_';
 const LAST_PLAYER_KEY = 'crackDelBarrio_v2_lastPlayer';
 
@@ -51,7 +51,6 @@ const SFX = (() => {
   return {
     pick: () => tone(600, 800, 'sine', 0.08, 0.15),
     prev: () => tone(500, 400, 'sine', 0.07, 0.12),
-    save: () => { tone(523,523,'sine',0.1,0.22); setTimeout(()=>tone(659,659,'sine',0.1,0.22),100); setTimeout(()=>tone(784,784,'sine',0.16,0.26),200); },
   };
 })();
 
@@ -271,28 +270,21 @@ class CreatorScene extends Phaser.Scene {
     });
   }
 
-  // ── Save button ─────────────────────────────────────────────
+  // ── Auto-save indicator (no button needed — every change saves) ──
   _buildHUD() {
-    const btn = this.add.rectangle(GW-90, 28, 140, 38, 0xffd700)
-      .setStrokeStyle(2, 0x000000, 0.3).setInteractive({ useHandCursor: true });
-    this.add.text(GW-90, 28, '💾 Guardar', {
-      fontSize: '17px', fontFamily: 'Arial Black, sans-serif', color: '#1a1a1a',
-    }).setOrigin(0.5).setDepth(5);
-    this.tweens.add({ targets: btn, scaleX: 1.04, duration: 700, yoyo: true, repeat: -1 });
-    btn.on('pointerdown', () => {
-      savePlayerState(PLAYERS[this.playerIdx].key, this.state);
-      SFX.save();
-      this._showToast('¡Guardado! ⭐');
-    });
+    this.saveIndicator = this.add.text(GW-30, 28, '✓', {
+      fontSize: '26px', fontFamily: 'Arial Black, sans-serif',
+      color: '#44dd44', stroke: '#000000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(5).setAlpha(0);
   }
 
-  _showToast(msg) {
-    const t = this.add.text(GW/2, GH/2, msg, {
-      fontSize: '36px', fontFamily: 'Arial Black', color: '#ffd700',
-      stroke: '#000000', strokeThickness: 6,
-    }).setOrigin(0.5).setAlpha(0).setDepth(200);
-    this.tweens.add({ targets: t, alpha: 1, y: GH/2-30, duration: 300,
-      yoyo: true, hold: 600, onComplete: () => t.destroy() });
+  _autoSave() {
+    savePlayerState(PLAYERS[this.playerIdx].key, this.state);
+    if (!this.saveIndicator) return;
+    this.tweens.killTweensOf(this.saveIndicator);
+    this.saveIndicator.setScale(1.5).setAlpha(1);
+    this.tweens.add({ targets: this.saveIndicator, scale: 1, duration: 200, ease: 'Back.out' });
+    this.tweens.add({ targets: this.saveIndicator, alpha: 0, delay: 600, duration: 400 });
   }
 
   // ── Category tabs (2 rows × 4) ──────────────────────────────
@@ -501,6 +493,7 @@ class CreatorScene extends Phaser.Scene {
       targets: this.numberText,
       scaleX: 1.18, scaleY: 1.18, duration: 110, yoyo: true,
     });
+    this._autoSave();
   }
 
   _celebrate() {
