@@ -5,7 +5,7 @@
 
 const GW = 1024;
 const GH = 576;
-const VERSION = '2.2';
+const VERSION = '2.3';
 const SAVE_PREFIX = 'crackDelBarrio_v2_';
 const LAST_PLAYER_KEY = 'crackDelBarrio_v2_lastPlayer';
 
@@ -185,6 +185,7 @@ class CreatorScene extends Phaser.Scene {
 
     this._buildBackground();
     this._buildPlayerArea();
+    this._buildPlayerCarousel();
     this._buildHUD();
     this._buildTabs();
     this._panelItems = [];
@@ -210,7 +211,7 @@ class CreatorScene extends Phaser.Scene {
   // ── Player avatar (left side) ────────────────────────────────
   _buildPlayerArea() {
     this.playerX = 190;
-    this.playerY = GH/2 + 20;
+    this.playerY = GH/2 + 34;
 
     this.add.rectangle(this.playerX, GH/2, 340, GH-10, 0x000000, 0.22)
       .setStrokeStyle(2, 0xffffff, 0.1);
@@ -225,6 +226,49 @@ class CreatorScene extends Phaser.Scene {
     const hitZone = this.add.rectangle(this.playerX, this.playerY, 140, 280, 0xffffff, 0)
       .setInteractive({ useHandCursor: true });
     hitZone.on('pointerdown', () => this._celebrate());
+  }
+
+  // ── Player carousel: pinned at the top of the left column, ──
+  // ── always visible so the reference photo never disappears. ──
+  _buildPlayerCarousel() {
+    const T = 54, gap = 10;
+    const totalW = PLAYERS.length*T + (PLAYERS.length-1)*gap;
+    const x0 = this.playerX - totalW/2;
+    const y = 46;
+
+    this.carouselObjs = [];
+    PLAYERS.forEach((p, i) => {
+      const cx = x0 + i*(T+gap) + T/2;
+      const has = this.textures.exists(p.key);
+
+      const glow = this.add.rectangle(cx, y, T+10, T+10, 0xffd700, 0.3).setDepth(3);
+
+      let img;
+      if (has) img = this.add.image(cx, y, p.key).setDisplaySize(T-6, T-6).setDepth(4);
+      else {
+        img = this.add.rectangle(cx, y, T-6, T-6, 0x333333).setDepth(4);
+        this.add.text(cx, y, '⚽', { fontSize:'20px' }).setOrigin(0.5).setDepth(5);
+      }
+
+      const border = this.add.rectangle(cx, y, T, T)
+        .setStrokeStyle(3, 0xffffff, 0.5).setDepth(5);
+
+      const hit = this.add.rectangle(cx, y, T, T, 0xffffff, 0)
+        .setInteractive({ useHandCursor: true });
+      hit.on('pointerdown', () => { this._switchPlayer(i); SFX.pick(); });
+
+      this.carouselObjs.push({ glow, border, idx: i });
+    });
+
+    this._refreshCarousel();
+  }
+
+  _refreshCarousel() {
+    this.carouselObjs.forEach(({ glow, border, idx }) => {
+      const sel = idx === this.playerIdx;
+      glow.setVisible(sel);
+      border.setStrokeStyle(sel?4:3, sel?0xffd700:0xffffff, sel?1:0.5);
+    });
   }
 
   // ── Save button ─────────────────────────────────────────────
@@ -254,7 +298,6 @@ class CreatorScene extends Phaser.Scene {
   // ── Category tabs (2 rows × 4) ──────────────────────────────
   _buildTabs() {
     this.CATS = [
-      { id: 'player',    icon: '🧑', label: 'Jugador' },
       { id: 'skin',      icon: '🎨', label: 'Piel' },
       { id: 'kit',       icon: '👕', label: 'Camiseta' },
       { id: 'number',    icon: '🔢', label: 'Número' },
@@ -263,7 +306,7 @@ class CreatorScene extends Phaser.Scene {
       { id: 'boots',     icon: '👟', label: 'Botines' },
       { id: 'accessory', icon: '⭐', label: 'Extra' },
     ];
-    this.activeCat = 'player';
+    this.activeCat = 'kit';
     this.tabObjs = [];
 
     const TAB_X0 = 370;
@@ -319,8 +362,7 @@ class CreatorScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xffffff, 0.15));
 
     const cat = this.activeCat;
-    if      (cat === 'player')    this._buildPlayerGalleryPanel(PX+14, PY+14, PW-28);
-    else if (cat === 'skin')      this._buildSwatches(PX+16, PY+14, SKIN_TONES, 'skin');
+    if      (cat === 'skin')      this._buildSwatches(PX+16, PY+14, SKIN_TONES, 'skin');
     else if (cat === 'kit')       this._buildKitPanel(PX+14, PY+14, PW-28);
     else if (cat === 'number')    this._buildNumberPanel(PX+14, PY+14, PW-28);
     else if (cat === 'hair')      this._buildHairPanel(PX+14, PY+14, PW-28);
@@ -329,67 +371,14 @@ class CreatorScene extends Phaser.Scene {
     else if (cat === 'accessory') this._buildAccPanel(PX+14, PY+14, PW-28);
   }
 
-  // ── Player gallery: big photo tiles, no text (pre-readers) ──
-  _buildPlayerGalleryPanel(x0, y0, w) {
-    const T = 150;      // tile size
-    const gapX = 18;
-    const gapY = 18;
-    const topPad = 10;
-
-    // Row 1: players 0-2 (3 tiles), Row 2: players 3-4 (2 tiles, centered)
-    const row1 = PLAYERS.slice(0, 3);
-    const row2 = PLAYERS.slice(3, 5);
-
-    const row1W = row1.length*T + (row1.length-1)*gapX;
-    const row2W = row2.length*T + (row2.length-1)*gapX;
-    const row1X0 = x0 + (w - row1W)/2;
-    const row2X0 = x0 + (w - row2W)/2;
-    const row1Y = y0 + topPad + T/2;
-    const row2Y = row1Y + T + gapY;
-
-    const buildTile = (p, idx, cx, cy) => {
-      const sel = idx === this.playerIdx;
-
-      // Selection glow ring behind the tile
-      if (sel) {
-        this._p(this.add.rectangle(cx, cy, T+14, T+14, 0xffd700, 0.25).setDepth(4));
-      }
-
-      const has = this.textures.exists(p.key);
-      if (has) {
-        this._p(this.add.image(cx, cy, p.key).setDisplaySize(T-8, T-8).setDepth(5));
-      } else {
-        this._p(this.add.rectangle(cx, cy, T-8, T-8, 0x333333).setDepth(5));
-        this._p(this.add.text(cx, cy, '⚽', { fontSize:'40px' }).setOrigin(0.5).setDepth(6));
-      }
-
-      this._p(this.add.rectangle(cx, cy, T, T)
-        .setStrokeStyle(sel?6:2, sel?0xffd700:0xffffff, sel?1:0.4).setDepth(6));
-
-      if (sel) {
-        const badge = this._p(this.add.circle(cx+T/2-4, cy-T/2+4, 15, 0xffd700).setDepth(7));
-        this._p(this.add.text(badge.x, badge.y, '✓', {
-          fontSize:'18px', fontFamily:'Arial Black', color:'#1a1a1a',
-        }).setOrigin(0.5).setDepth(8));
-      }
-
-      const hit = this._p(this.add.rectangle(cx, cy, T, T, 0xffffff, 0)
-        .setInteractive({ useHandCursor: true }));
-      hit.on('pointerdown', () => { this._switchPlayer(idx); SFX.pick(); });
-    };
-
-    row1.forEach((p, i) => buildTile(p, i, row1X0 + i*(T+gapX) + T/2, row1Y));
-    row2.forEach((p, i) => buildTile(p, i+3, row2X0 + i*(T+gapX) + T/2, row2Y));
-  }
-
   _switchPlayer(idx) {
     if (idx === this.playerIdx) return;
     savePlayerState(PLAYERS[this.playerIdx].key, this.state);
     this.playerIdx = idx;
     saveLastPlayerIdx(idx);
     this.state = loadPlayerState(PLAYERS[idx].key, PLAYERS[idx].number);
+    this._refreshCarousel();
     this._redraw();
-    this._buildPanel();
   }
 
   // colour swatches (skin / hair color / boots)
