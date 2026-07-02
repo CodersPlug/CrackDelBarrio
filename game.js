@@ -5,17 +5,18 @@
 
 const GW = 1024;
 const GH = 576;
-const VERSION = '2.0';
+const VERSION = '2.1';
 const SAVE_PREFIX = 'crackDelBarrio_v2_';
 const LAST_PLAYER_KEY = 'crackDelBarrio_v2_lastPlayer';
 
-// Real photos hosted on Wikimedia Commons (CC-licensed, CORS-enabled).
+// Real photos bundled locally (assets/players/) so the game works fully offline.
+// Source: Wikimedia Commons, CC-licensed. See assets/players/CREDITS.txt for attribution.
 const PLAYERS = [
-  { key: 'messi',   name: 'MESSI',         number: 10, photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Lionel_Messi_20180626.jpg/500px-Lionel_Messi_20180626.jpg' },
-  { key: 'dibu',    name: 'DIBU MARTÍNEZ', number: 23, photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Emiliano_Martinez.jpg/500px-Emiliano_Martinez.jpg' },
-  { key: 'paredes', name: 'PAREDES',       number: 5,  photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Leandro_Paredes_in_2019.jpg/500px-Leandro_Paredes_in_2019.jpg' },
-  { key: 'depaul',  name: 'DE PAUL',       number: 7,  photo: 'https://upload.wikimedia.org/wikipedia/commons/1/17/Rodrigo_de_Paul_%282022%29.jpg' },
-  { key: 'lautaro', name: 'LAUTARO',       number: 22, photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lautaro_Mart%C3%ADnez_%28cropped%29.jpg/500px-Lautaro_Mart%C3%ADnez_%28cropped%29.jpg' },
+  { key: 'messi',   name: 'MESSI',         number: 10, photo: 'assets/players/messi.jpg' },
+  { key: 'dibu',    name: 'DIBU MARTÍNEZ', number: 23, photo: 'assets/players/dibu.jpg' },
+  { key: 'paredes', name: 'PAREDES',       number: 5,  photo: 'assets/players/paredes.jpg' },
+  { key: 'depaul',  name: 'DE PAUL',       number: 7,  photo: 'assets/players/depaul.jpg' },
+  { key: 'lautaro', name: 'LAUTARO',       number: 22, photo: 'assets/players/lautaro.jpg' },
 ];
 
 const SKIN_TONES  = [0xffe0bd, 0xffcd94, 0xd4a574, 0xc68642, 0x8d5524, 0x4a2912];
@@ -173,7 +174,6 @@ class CreatorScene extends Phaser.Scene {
     const loadingText = this.add.text(GW/2, GH/2, 'Cargando fotos...', {
       fontSize: '22px', fontFamily: 'Arial, sans-serif', color: '#ffffff',
     }).setOrigin(0.5);
-    this.load.crossOrigin = 'anonymous';
     PLAYERS.forEach(p => this.load.image(p.key, p.photo));
     this.load.on('loaderror', (file) => console.warn('No se pudo cargar la foto de', file.key));
     this.load.once('complete', () => loadingText.destroy());

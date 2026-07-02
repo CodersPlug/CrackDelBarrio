@@ -1,0 +1,35 @@
+Fotos de jugadores — créditos y licencias
+==========================================
+Todas las fotos provienen de Wikimedia Commons y están bajo licencia
+Creative Commons (atribución requerida). Se incluyen localmente en este
+repo para que el juego funcione sin conexión a internet.
+
+messi.jpg
+  Lionel Messi, 26 de junio de 2018.
+  Autor: Кирилл Венедиктов — fuente: soccer.ru
+  Licencia: CC BY-SA 3.0
+  https://commons.wikimedia.org/wiki/File:Lionel_Messi_20180626.jpg
+
+dibu.jpg
+  Emiliano "Dibu" Martínez, Aston Villa FC, 26 de julio de 2023.
+  Autor: Kenny Rowland — obra propia
+  Licencia: CC BY-SA (Wikimedia Commons)
+  https://commons.wikimedia.org/wiki/File:Emiliano_Martinez.jpg
+
+paredes.jpg
+  Leandro Paredes, enero de 2019.
+  Autor: Vyacheslav Evdokimov — fuente: fc-zenit.ru
+  Licencia: CC BY-SA (Wikimedia Commons)
+  https://commons.wikimedia.org/wiki/File:Leandro_Paredes_in_2019.jpg
+
+depaul.jpg
+  Rodrigo De Paul, Mundial de Qatar 2022.
+  Autor: Hossein Zohrevand — fuente: Tasnim News Agency
+  Licencia: CC BY 4.0
+  https://commons.wikimedia.org/wiki/File:Rodrigo_de_Paul_(2022).jpg
+
+lautaro.jpg
+  Lautaro Martínez, Argentina U20 vs Colombia, febrero 2017.
+  Autor: Agencia de Noticias ANDES
+  Licencia: CC BY-SA (Wikimedia Commons)
+  https://commons.wikimedia.org/wiki/File:Lautaro_Mart%C3%ADnez_(cropped).jpg
