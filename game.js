@@ -5,9 +5,40 @@
 
 const GW = 1024;
 const GH = 576;
-const VERSION = '2.4';
+const VERSION = '2.5';
+const GAME_ID = 'crackDelBarrio';
+const PLAY_STORAGE_KEY = 'phaserlab_daily_plays'; // shared across CodersPlug games (same origin)
+const MAX_PLAYS_PER_DAY = 5;
 const SAVE_PREFIX = 'crackDelBarrio_v2_';
 const LAST_PLAYER_KEY = 'crackDelBarrio_v2_lastPlayer';
+
+// ── Daily play limit (shared with all CodersPlug games) ─────────
+const DailyPlays = {
+  today() { return new Date().toISOString().slice(0, 10); },
+  load() {
+    const empty = { date: this.today(), count: 0, versions: {} };
+    try {
+      const raw = localStorage.getItem(PLAY_STORAGE_KEY);
+      if (!raw) return empty;
+      const data = JSON.parse(raw);
+      if (!data.versions) data.versions = {};
+      let dirty = false;
+      if (data.date !== this.today()) { data.date = this.today(); data.count = 0; dirty = true; }
+      if (data.versions[GAME_ID] !== VERSION) { data.count = 0; data.versions[GAME_ID] = VERSION; dirty = true; }
+      if (dirty) this.persist(data);
+      return data;
+    } catch (_) { return empty; }
+  },
+  persist(data) {
+    if (!data.versions) data.versions = {};
+    data.versions[GAME_ID] = VERSION;
+    localStorage.setItem(PLAY_STORAGE_KEY, JSON.stringify(data));
+  },
+  remaining() { return Math.max(0, MAX_PLAYS_PER_DAY - this.load().count); },
+  canPlay() { return this.remaining() > 0; },
+  record() { const d = this.load(); d.count++; this.persist(d); },
+  reset() { localStorage.removeItem(PLAY_STORAGE_KEY); },
+};
 
 // Real photos bundled locally (assets/players/) so the game works fully offline.
 // Source: Wikimedia Commons, CC-licensed. See assets/players/CREDITS.txt for attribution.
@@ -510,12 +541,54 @@ class CreatorScene extends Phaser.Scene {
   }
 }
 
-// ── Boot ─────────────────────────────────────────────────────
+// ── Daily limit screen ───────────────────────────────────────
+class DailyLimitScene extends Phaser.Scene {
+  constructor() { super('DailyLimitScene'); }
+
+  create() {
+    for (let i = 0; i < 8; i++) {
+      this.add.rectangle(i*GW/8 + GW/16, GH/2, GW/8-1, GH,
+        i%2===0 ? 0x1a7a3c : 0x157030);
+    }
+    this.add.rectangle(GW/2, GH/2, GW, GH, 0x000000, 0.4);
+
+    const moon = this.add.text(GW/2, GH/2-100, '🌙', { fontSize: '96px' })
+      .setOrigin(0.5).setInteractive();
+    this.add.text(GW/2, GH/2+10, '¡Hasta mañana!', {
+      fontSize: '44px', fontFamily: 'Arial Black, sans-serif',
+      color: '#ffd700', stroke: '#1a7a3c', strokeThickness: 6,
+    }).setOrigin(0.5);
+    this.add.text(GW/2, GH/2+80, '😴 ⚽', { fontSize: '44px' }).setOrigin(0.5);
+
+    this.add.text(8, GH-6, 'v'+VERSION, {
+      fontSize: '13px', fontFamily: 'monospace', color: '#ffffff44',
+    }).setOrigin(0, 1);
+
+    let holdEvt = null;
+    moon.on('pointerdown', () => {
+      holdEvt = this.time.delayedCall(3000, () => { DailyPlays.reset(); this.scene.start('BootScene'); });
+    });
+    const cancel = () => { if (holdEvt) { holdEvt.remove(); holdEvt = null; } };
+    moon.on('pointerup', cancel);
+    moon.on('pointerout', cancel);
+  }
+}
+
+// ── Boot: check the shared daily-play limit before entering ──
+class BootScene extends Phaser.Scene {
+  constructor() { super('BootScene'); }
+  create() {
+    if (!DailyPlays.canPlay()) { this.scene.start('DailyLimitScene'); return; }
+    DailyPlays.record();
+    this.scene.start('CreatorScene');
+  }
+}
+
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
   backgroundColor: '#1a7a3c',
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, width: GW, height: GH },
-  scene: [CreatorScene],
+  scene: [BootScene, CreatorScene, DailyLimitScene],
   input: { activePointers: 1 },
 });
